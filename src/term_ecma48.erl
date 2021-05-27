@@ -12,10 +12,29 @@
 %% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
 %% IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
--module(term).
+-module(term_ecma48).
 
--export([]).
+-export([sgr_sequence/1]).
 
--export_type([text/0]).
+-export_type([sgr_parameter/0]).
 
--type text() :: unicode:chardata().
+-type sgr_parameter() ::
+        0..29
+      | 30..37 | {38, 0..255} | {38, 0..255, 0..255, 0..255} | 39
+      | 40..47 | {48, 0..255} | {48, 0..255, 0..255, 0..255} | 49
+      | 50..65.
+
+-spec sgr_sequence([sgr_parameter()]) -> term:text().
+sgr_sequence(Parameters) ->
+  ["\e[", lists:join($;, [sgr_parameter(P) || P <- Parameters]), $m].
+
+-spec sgr_parameter(sgr_parameter()) -> term:text().
+sgr_parameter(N) when is_integer(N) ->
+  integer_to_list(N);
+sgr_parameter({N, X}) ->
+  [integer_to_list(N), ";5;", integer_to_list(X)];
+sgr_parameter({N, R, G, B}) ->
+  [integer_to_list(N), ";2",
+   $;, integer_to_list(R),
+   $;, integer_to_list(G),
+   $;, integer_to_list(B)].
