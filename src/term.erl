@@ -16,7 +16,8 @@
 
 -export([encode/1, decode/1]).
 
--export_type([text/0, stream/0, part/0, sequence/0, sgr_parameter/0]).
+-export_type([text/0, stream/0, part/0, sequence/0,
+              sgr_parameter/0, color/0]).
 
 -type text() ::
         unicode:chardata().
