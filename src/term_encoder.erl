@@ -38,6 +38,7 @@ sgr_sequence(Parameters) ->
   ["\e[", lists:join($;, [integer_to_list(C) || C <- Codes]), $m].
 
 -spec sgr_parameter_codes(term:sgr_parameter()) -> 0..255 | [0..255].
+sgr_parameter_codes(default) -> 0;
 sgr_parameter_codes(bold) -> 1;
 sgr_parameter_codes(italic) -> 3;
 sgr_parameter_codes(underline) -> 4;

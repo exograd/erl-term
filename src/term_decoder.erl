@@ -95,7 +95,7 @@ decode_sgr_parameters([], Parameters) ->
 decode_sgr_parameters([Code | Codes], Parameters) when Code < 38 ->
   Parameter =
     case Code of
-      0 -> reset;
+      0 -> default;
       1 -> bold;
       3 -> italic;
       4 -> underline;
