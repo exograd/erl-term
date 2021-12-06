@@ -14,51 +14,39 @@
 
 -module(term).
 
--export([with_text_attributes/2]).
+-export([encode/1, decode/1]).
 
--export_type([text/0, color/0]).
+-export_type([text/0, stream/0, part/0, sequence/0, sgr_parameter/0]).
 
--type text() :: unicode:chardata().
+-type text() ::
+        unicode:chardata().
 
--type color() :: black | red | green | yellow | blue | magenta | cyan | white
-               | {'8bit', 0..255}
-               | {rgb, 0..255, 0..255, 0..255}.
+-type stream() ::
+        [part()].
 
--type text_attribute() ::
-        bold | italic | underline | reverse_video | crossed_out
+-type part() ::
+        {text, term:text()}
+      | {sequence, sequence()}.
+
+-type sequence() ::
+        {sgr, [sgr_parameter()]}.
+
+-type sgr_parameter() ::
+        default
+      | bold | italic | underline | reverse_video | crossed_out
       | {foreground, color()}
-      | {background, color()}.
+      | {background, color()}
+      | 0..255.
 
--spec with_text_attributes(text(), [text_attribute()]) -> text().
-with_text_attributes(Text, Attributes) ->
-  Parameters = [text_attribute(A) || A <- Attributes],
-  term_ecma48:encode([{sequence, {sgr, Parameters}},
-                      {text, Text},
-                      {sequence, {sgr, [0]}}]).
+-type color() ::
+        black | red | green | yellow | blue | magenta | cyan | white
+      | {'8bit', 0..255}
+      | {rgb, 0..255, 0..255, 0..255}.
 
--spec text_attribute(text_attribute()) -> term_ecma48:sgr_parameter().
-text_attribute(bold) -> 1;
-text_attribute(italic) -> 3;
-text_attribute(underline) -> 4;
-text_attribute(reverse_video) -> 7;
-text_attribute(crossed_out) -> 9;
-text_attribute({foreground, black}) -> 30;
-text_attribute({foreground, red}) -> 31;
-text_attribute({foreground, green}) -> 32;
-text_attribute({foreground, yellow}) -> 33;
-text_attribute({foreground, blue}) -> 34;
-text_attribute({foreground, magenta}) -> 35;
-text_attribute({foreground, cyan}) -> 36;
-text_attribute({foreground, white}) -> 37;
-text_attribute({foreground, {'8bit', N}}) -> {38, N};
-text_attribute({foreground, {rgb, R, G, B}}) -> {38, R, G, B};
-text_attribute({background, black}) -> 40;
-text_attribute({background, red}) -> 41;
-text_attribute({background, green}) -> 42;
-text_attribute({background, yellow}) -> 43;
-text_attribute({background, blue}) -> 44;
-text_attribute({background, magenta}) -> 45;
-text_attribute({background, cyan}) -> 46;
-text_attribute({background, white}) -> 47;
-text_attribute({background, {'8bit', N}}) -> {48, N};
-text_attribute({background, {rgb, R, G, B}}) -> {48, R, G, B}.
+-spec encode(stream()) -> term:text().
+encode(Stream) ->
+  term_encoder:encode(Stream).
+
+-spec decode(binary()) -> term:stream().
+decode(Data) ->
+  term_decoder:decode(Data).

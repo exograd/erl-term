@@ -12,56 +12,55 @@
 %% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
 %% IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
--module(term_ecma48_decoder).
+-module(term_decoder).
 
 -export([decode/1]).
 
--spec decode(binary()) -> term_ecma48:document().
+-spec decode(binary()) -> term:stream().
 decode(Data) ->
   decode(Data, undefined, []).
 
--spec decode(binary(), undefined | binary(), term_ecma48:document()) ->
-        term_ecma48:document().
-decode(<<>>, _, Document) ->
-  %% We ignore any started sequence data at the end of the document
-  lists:reverse(Document);
-decode(<<"\e[", Data/binary>>, undefined, Document) ->
+-spec decode(binary(), undefined | binary(), term:stream()) -> term:stream().
+decode(<<>>, _, Stream) ->
+  %% We ignore any started sequence data at the end of the stream
+  lists:reverse(Stream);
+decode(<<"\e[", Data/binary>>, undefined, Stream) ->
   %% Start a new sequence
-  decode(Data, <<"\e[">>, Document);
-decode(Data = <<"\e[", _/binary>>, SequenceData, Document) ->
+  decode(Data, <<"\e[">>, Stream);
+decode(Data = <<"\e[", _/binary>>, SequenceData, Stream) ->
   %% SequenceData was never terminated, insert it as text
-  decode(Data, undefined, [{text, SequenceData} | Document]);
-decode(Data, undefined, Document) ->
+  decode(Data, undefined, [{text, SequenceData} | Stream]);
+decode(Data, undefined, Stream) ->
   case binary:match(Data, <<"\e[">>) of
     {Start, _} ->
       Text = binary:part(Data, 0, Start),
       Data2 = binary:part(Data, Start, byte_size(Data) - Start),
-      decode(Data2, undefined, [{text, Text} | Document]);
+      decode(Data2, undefined, [{text, Text} | Stream]);
     nomatch ->
       %% No more sequence
-      decode(<<>>, undefined, [{text, Data} | Document])
+      decode(<<>>, undefined, [{text, Data} | Stream])
   end;
-decode(<<"m", Data/binary>>, SequenceData, Document) ->
+decode(<<"m", Data/binary>>, SequenceData, Stream) ->
   %% End of an SGR sequence
-  decode_sgr_sequence(SequenceData, Data, Document);
-decode(<<C, Data/binary>>, SequenceData, Document) ->
+  decode_sgr_sequence(SequenceData, Data, Stream);
+decode(<<C, Data/binary>>, SequenceData, Stream) ->
   %% More data for the current sequence
-  decode(Data, <<SequenceData/binary, C>>, Document).
+  decode(Data, <<SequenceData/binary, C>>, Stream).
 
--spec decode_sgr_sequence(binary(), binary(), term_ecma48:document()) ->
-        term_ecma48:document().
+-spec decode_sgr_sequence(binary(), binary(), term:stream()) -> term:stream().
 decode_sgr_sequence(Data = <<"\e[", ParameterData/binary>>,
-                    NextData, Document) ->
+                    NextData, Stream) ->
   case decode_sgr_parameter_values(ParameterData, []) of
     {ok, Values} ->
       case decode_sgr_parameters(Values, []) of
         {ok, Parameters} ->
-          decode(NextData, undefined, [{sequence, {sgr, Parameters}} | Document]);
+          decode(NextData, undefined,
+                 [{sequence, {sgr, Parameters}} | Stream]);
         error ->
-          decode(NextData, undefined, [{text, Data} | Document])
+          decode(NextData, undefined, [{text, Data} | Stream])
       end;
     error ->
-      decode(NextData, undefined, [{text, Data} | Document])
+      decode(NextData, undefined, [{text, Data} | Stream])
   end.
 
 -spec decode_sgr_parameter_values(binary(), [non_neg_integer()]) ->
@@ -86,9 +85,8 @@ decode_sgr_parameter_values(Data, Codes) ->
       error
   end.
 
--spec decode_sgr_parameters([non_neg_integer()],
-                            [term_ecma48:sgr_parameter()]) ->
-        {ok, [term_ecma48:sgr_parameter()]} | error.
+-spec decode_sgr_parameters([non_neg_integer()], [term:sgr_parameter()]) ->
+        {ok, [term:sgr_parameter()]} | error.
 decode_sgr_parameters([], Parameters) ->
   {ok, lists:reverse(Parameters)};
 decode_sgr_parameters([Code | Codes], Parameters) when Code < 38 ->
