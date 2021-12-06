@@ -16,14 +16,16 @@
 
 -export([decode/1]).
 
--spec decode(binary()) -> term:stream().
+-spec decode(binary()) -> {term:stream(), binary()}.
 decode(Data) ->
   decode(Data, undefined, []).
 
--spec decode(binary(), undefined | binary(), term:stream()) -> term:stream().
-decode(<<>>, _, Stream) ->
-  %% We ignore any started sequence data at the end of the stream
-  lists:reverse(Stream);
+-spec decode(binary(), undefined | binary(), term:stream()) ->
+        {term:stream(), binary()}.
+decode(<<>>, undefined, Stream) ->
+  {lists:reverse(Stream), <<>>};
+decode(<<>>, SequenceData, Stream) ->
+  {lists:reverse(Stream), SequenceData};
 decode(<<"\e[", Data/binary>>, undefined, Stream) ->
   %% Start a new sequence
   decode(Data, <<"\e[">>, Stream);
@@ -47,7 +49,8 @@ decode(<<C, Data/binary>>, SequenceData, Stream) ->
   %% More data for the current sequence
   decode(Data, <<SequenceData/binary, C>>, Stream).
 
--spec decode_sgr_sequence(binary(), binary(), term:stream()) -> term:stream().
+-spec decode_sgr_sequence(binary(), binary(), term:stream()) ->
+        {term:stream(), binary()}.
 decode_sgr_sequence(Data = <<"\e[", ParameterData/binary>>,
                     NextData, Stream) ->
   case decode_sgr_parameter_values(ParameterData, []) of

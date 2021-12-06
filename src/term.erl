@@ -48,6 +48,6 @@
 encode(Stream) ->
   term_encoder:encode(Stream).
 
--spec decode(binary()) -> term:stream().
+-spec decode(binary()) -> {term:stream(), binary()}.
 decode(Data) ->
   term_decoder:decode(Data).
