@@ -37,7 +37,7 @@
       | bold | italic | underline | reverse_video | crossed_out
       | {foreground, color()}
       | {background, color()}
-      | 0..255.
+      | 0..255. % only supported by the encoder
 
 -type color() ::
         black | red | green | yellow | blue | magenta | cyan | white
