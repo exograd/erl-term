@@ -14,8 +14,7 @@
 
 -module(term_ecma48).
 
--export([encode/1,
-         csi/0]).
+-export([encode/1]).
 
 -export_type([document/0, part/0, sequence/0, sgr_parameter/0]).
 
@@ -53,7 +52,7 @@ encode_sequence({sgr, Parameters}) ->
 
 -spec sgr_sequence([sgr_parameter()]) -> term:text().
 sgr_sequence(Parameters) ->
-  [csi(), lists:join($;, [sgr_parameter(P) || P <- Parameters]), $m].
+  ["\e[", lists:join($;, [sgr_parameter(P) || P <- Parameters]), $m].
 
 -spec sgr_parameter(sgr_parameter()) -> term:text().
 sgr_parameter(N) when is_integer(N) ->
@@ -65,8 +64,3 @@ sgr_parameter({N, R, G, B}) ->
    $;, integer_to_list(R),
    $;, integer_to_list(G),
    $;, integer_to_list(B)].
-
--spec csi() -> binary().
-csi() ->
-  %% Control Sequence Introducer (ECMA-48 5.4)
-  <<"\e[">>.
