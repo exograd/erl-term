@@ -14,8 +14,7 @@
 
 -module(term).
 
--export([set_text_attributes/1, reset_text_attributes/0,
-         with_text_attributes/2]).
+-export([with_text_attributes/2]).
 
 -export_type([text/0, color/0]).
 
@@ -30,17 +29,12 @@
       | {foreground, color()}
       | {background, color()}.
 
--spec set_text_attributes([text_attribute()]) -> text().
-set_text_attributes(Attributes) ->
-  term_ecma48:sgr_sequence([text_attribute(A) || A <- Attributes]).
-
--spec reset_text_attributes() -> text().
-reset_text_attributes() ->
-  term_ecma48:sgr_sequence([0]).
-
 -spec with_text_attributes(text(), [text_attribute()]) -> text().
 with_text_attributes(Text, Attributes) ->
-  [set_text_attributes(Attributes), Text, reset_text_attributes()].
+  Parameters = [text_attribute(A) || A <- Attributes],
+  term_ecma48:encode([{sequence, {sgr, Parameters}},
+                      {text, Text},
+                      {sequence, {sgr, [0]}}]).
 
 -spec text_attribute(text_attribute()) -> term_ecma48:sgr_parameter().
 text_attribute(bold) -> 1;
