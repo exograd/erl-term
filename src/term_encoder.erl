@@ -34,15 +34,33 @@ encode_sequence({sgr, Parameters}) ->
 
 -spec sgr_sequence([term:sgr_parameter()]) -> term:text().
 sgr_sequence(Parameters) ->
-  ["\e[", lists:join($;, [sgr_parameter(P) || P <- Parameters]), $m].
+  Codes = lists:flatten([sgr_parameter_codes(P) || P <- Parameters]),
+  ["\e[", lists:join($;, [integer_to_list(C) || C <- Codes]), $m].
 
--spec sgr_parameter(term:sgr_parameter()) -> term:text().
-sgr_parameter(N) when is_integer(N) ->
-  integer_to_list(N);
-sgr_parameter({N, X}) ->
-  [integer_to_list(N), ";5;", integer_to_list(X)];
-sgr_parameter({N, R, G, B}) ->
-  [integer_to_list(N), ";2;",
-   integer_to_list(R), $;,
-   integer_to_list(G), $;,
-   integer_to_list(B)].
+-spec sgr_parameter_codes(term:sgr_parameter()) -> 0..255 | [0..255].
+sgr_parameter_codes(bold) -> 1;
+sgr_parameter_codes(italic) -> 3;
+sgr_parameter_codes(underline) -> 4;
+sgr_parameter_codes(reverse_video) -> 7;
+sgr_parameter_codes(crossed_out) -> 9;
+sgr_parameter_codes({foreground, black}) -> 30;
+sgr_parameter_codes({foreground, red}) -> 31;
+sgr_parameter_codes({foreground, green}) -> 32;
+sgr_parameter_codes({foreground, yellow}) -> 33;
+sgr_parameter_codes({foreground, blue}) -> 34;
+sgr_parameter_codes({foreground, magenta}) -> 35;
+sgr_parameter_codes({foreground, cyan}) -> 36;
+sgr_parameter_codes({foreground, white}) -> 37;
+sgr_parameter_codes({foreground, {rgb, R, G, B}}) -> [38, 2, R, G, B];
+sgr_parameter_codes({foreground, {'8bit', N}}) -> [38, 5, N];
+sgr_parameter_codes({background, black}) -> 40;
+sgr_parameter_codes({background, red}) -> 41;
+sgr_parameter_codes({background, green}) -> 42;
+sgr_parameter_codes({background, yellow}) -> 43;
+sgr_parameter_codes({background, blue}) -> 44;
+sgr_parameter_codes({background, magenta}) -> 45;
+sgr_parameter_codes({background, cyan}) -> 46;
+sgr_parameter_codes({background, white}) -> 47;
+sgr_parameter_codes({background, {rgb, R, G, B}}) -> [48, 2, R, G, B];
+sgr_parameter_codes({background, {'8bit', N}}) -> [48, 5, N];
+sgr_parameter_codes(Code) when is_integer(Code) -> Code.

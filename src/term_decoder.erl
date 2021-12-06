@@ -63,8 +63,8 @@ decode_sgr_sequence(Data = <<"\e[", ParameterData/binary>>,
       decode(NextData, undefined, [{text, Data} | Stream])
   end.
 
--spec decode_sgr_parameter_values(binary(), [non_neg_integer()]) ->
-        {ok, [non_neg_integer()]} | error.
+-spec decode_sgr_parameter_values(binary(), [0..255]) ->
+        {ok, [0..255]} | error.
 decode_sgr_parameter_values(<<>>, Codes) ->
   {ok, lists:reverse(Codes)};
 decode_sgr_parameter_values(Data, Codes) ->
@@ -85,23 +85,62 @@ decode_sgr_parameter_values(Data, Codes) ->
       error
   end.
 
--spec decode_sgr_parameters([non_neg_integer()], [term:sgr_parameter()]) ->
+-spec decode_sgr_parameters([0..255], [term:sgr_parameter()]) ->
         {ok, [term:sgr_parameter()]} | error.
 decode_sgr_parameters([], Parameters) ->
   {ok, lists:reverse(Parameters)};
 decode_sgr_parameters([Code | Codes], Parameters) when Code < 38 ->
-  decode_sgr_parameters(Codes, [Code | Parameters]);
+  Parameter =
+    case Code of
+      0 -> reset;
+      1 -> bold;
+      3 -> italic;
+      4 -> underline;
+      7 -> reverse_video;
+      9 -> crossed_out;
+      30 -> {foreground, black};
+      31 -> {foreground, red};
+      32 -> {foreground, green};
+      33 -> {foreground, yellow};
+      34 -> {foreground, blue};
+      35 -> {foreground, magenta};
+      36 -> {foreground, cyan};
+      37 -> {foreground, white};
+      _ -> Code
+    end,
+  decode_sgr_parameters(Codes, [Parameter | Parameters]);
 decode_sgr_parameters([38 | Codes], Parameters) ->
   case Codes of
     [2, R, G, B | Codes2] ->
-      decode_sgr_parameters(Codes2, [{38, R, G, B} | Parameters]);
+      decode_sgr_parameters(Codes2, [{foreground, {rgb, R, G, B}} | Parameters]);
     [5, N | Codes2] ->
-      decode_sgr_parameters(Codes2, [{38, N} | Parameters]);
+      decode_sgr_parameters(Codes2, [{foreground, {'8bit', N}} | Parameters]);
     _ ->
       error
   end;
 decode_sgr_parameters([Code | Codes], Parameters) when Code < 48 ->
-  decode_sgr_parameters(Codes, [Code | Parameters]);
+  Parameter =
+    case Code of
+      40 -> {background, black};
+      41 -> {background, red};
+      42 -> {background, green};
+      43 -> {background, yellow};
+      44 -> {background, blue};
+      45 -> {background, magenta};
+      46 -> {background, cyan};
+      47 -> {background, white};
+      _ -> Code
+    end,
+  decode_sgr_parameters(Codes, [Parameter | Parameters]);
+decode_sgr_parameters([48 | Codes], Parameters) ->
+  case Codes of
+    [2, R, G, B | Codes2] ->
+      decode_sgr_parameters(Codes2, [{background, {rgb, R, G, B}} | Parameters]);
+    [5, N | Codes2] ->
+      decode_sgr_parameters(Codes2, [{background, {'8bit', N}} | Parameters]);
+    _ ->
+      error
+  end;
 decode_sgr_parameters([Code | Codes], Parameters) when Code < 66 ->
   decode_sgr_parameters(Codes, [Code | Parameters]);
 decode_sgr_parameters([_ | _], _) ->

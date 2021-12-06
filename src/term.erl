@@ -41,8 +41,8 @@
 
 -type color() ::
         black | red | green | yellow | blue | magenta | cyan | white
-      | {'8bit', 0..255}
-      | {rgb, 0..255, 0..255, 0..255}.
+      | {rgb, 0..255, 0..255, 0..255}
+      | {'8bit', 0..255}.
 
 -spec encode(stream()) -> term:text().
 encode(Stream) ->
