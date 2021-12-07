@@ -14,22 +14,12 @@
 
 -module(term_interpreter).
 
--export([init/0, update/2]).
+-export([run/1]).
 
--export_type([event/0, graphic_state/0,
-              state/0]).
+-export_type([block/0]).
 
--type event() ::
-        {text, binary()}
-      | {set_graphic_state, graphic_state()}
-      | reset_graphic_state.
-
--type graphic_state() ::
-        sgr_state().
-
--opaque state() ::
-        #{buffer := binary(),
-          sgr := sgr_state()}.
+-type state() ::
+        #{sgr := sgr_state()}.
 
 -type sgr_state() ::
         #{bold => boolean(),
@@ -40,56 +30,54 @@
           foreground => term:color(),
           background => term:color()}.
 
--spec init() -> state().
-init() ->
-  #{buffer => <<>>,
-    sgr => #{}}.
+-type block() ::
+        #{text := term:text(),
+          bold => boolean(),
+          italic => boolean(),
+          underline => boolean(),
+          reverse_video => boolean(),
+          crossed_out => boolean(),
+          foreground => term:color(),
+          background => term:color()}.
 
--spec update(binary(), state()) -> {[event()], state()}.
-update(Data, State = #{buffer := Buf}) ->
-  {Stream, Rest} = term:decode(<<Buf/binary, Data/binary>>),
-  interpret(Stream, [], State#{buffer => Rest}).
+-spec run(binary()) -> term:text().
+run(Data) ->
+  {Stream, _} = term:decode(Data),
+  State = #{sgr => #{}},
+  run(Stream, [], State).
 
--spec interpret(term:stream(), [event()], state()) -> {[event()], state()}.
-interpret([], Events, State) ->
-  {lists:reverse(Events), State};
-interpret([Part | Stream], Events, State) ->
-  {PartEvents, State2} = interpret_part(Part, State),
-  Events2 = lists:append(lists:reverse(PartEvents), Events),
-  interpret(Stream, Events2, State2).
+-spec run(term:stream(), [block()], state()) -> [block()].
+run([], Acc, _State) ->
+  lists:reverse(Acc);
+run([{text, Text} | Stream], Acc, State = #{sgr := SGRState}) ->
+  Block = maps:merge(#{text => Text},
+                     maps:with([bold, italic, underline, reverse_video,
+                                crossed_out, foreground, background],
+                               SGRState)),
+  run(Stream, [Block | Acc], State);
+run([{sequence, {sgr, Parameters}} | Stream], Acc,
+    State = #{sgr := SGRState}) ->
+  SGRState2 = apply_sgr_parameters(Parameters, SGRState),
+  run(Stream, Acc, State#{sgr => SGRState2}).
 
--spec interpret_part(term:part(), state()) -> {[event()], state()}.
-interpret_part({text, Text}, State) ->
-  {[{text, Text}], State};
-interpret_part({sequence, {sgr, Parameters}}, State = #{sgr := SGRState}) ->
-  {Events, SGRState2} = update_sgr_state(SGRState, SGRState, Parameters, []),
-  {Events, State#{sgr => SGRState2}};
-interpret_part(_, State) ->
-  {[], State}.
+-spec apply_sgr_parameters([term:sgr_parameter()], sgr_state()) -> sgr_state().
+apply_sgr_parameters(Parameters, State) ->
+  lists:foldl(fun apply_sgr_parameter/2, State, Parameters).
 
--spec update_sgr_state(sgr_state(), sgr_state(), [term:sgr_parameter()],
-                       [event()]) ->
-        {[event()], sgr_state()}.
-update_sgr_state(State, State0, [], Events) when State =:= State0 ->
-  {lists:reverse(Events), #{}};
-update_sgr_state(State, _State0, [], Events) ->
-  {lists:reverse([{set_graphic_state, State} | Events]), State};
-update_sgr_state(State, State0, [default | Parameters], Events) when
-    State =:= State0 ->
-  update_sgr_state(#{}, #{}, Parameters, Events);
-update_sgr_state(State, _State0, [default | Parameters], Events) ->
-  update_sgr_state(#{}, #{}, Parameters,
-                   [reset_graphic_state, {set_graphic_state, State} | Events]);
-update_sgr_state(State, State0, [Parameter | Parameters], Events) ->
-  State2 =
-    case Parameter of
-      bold -> State#{bold => true};
-      italic -> State#{italic => true};
-      underline -> State#{underline => true};
-      reverse_video -> State#{reverse_video => true};
-      crossed_out -> State#{crossed_out => true};
-      {foreground, Color} -> State#{foreground => Color};
-      {background, Color} -> State#{background => Color};
-      _ -> State
-    end,
-  update_sgr_state(State2, State0, Parameters, Events).
+-spec apply_sgr_parameter(term:sgr_parameter(), sgr_state()) -> sgr_state().
+apply_sgr_parameter(default, _State) ->
+  #{};
+apply_sgr_parameter(bold, State) ->
+  State#{bold => true};
+apply_sgr_parameter(italic, State) ->
+  State#{italic => true};
+apply_sgr_parameter(underline, State) ->
+  State#{underline => true};
+apply_sgr_parameter(reverse_video, State) ->
+  State#{reverse_video => true};
+apply_sgr_parameter(crossed_out, State) ->
+  State#{crossed_out => true};
+apply_sgr_parameter({foreground, Color}, State) ->
+  State#{foreground => Color};
+apply_sgr_parameter({background, Color}, State) ->
+  State#{background => Color}.
