@@ -31,7 +31,7 @@
           background => term:color()}.
 
 -type block() ::
-        #{text := term:text(),
+        #{text := binary(),
           bold => boolean(),
           italic => boolean(),
           underline => boolean(),
@@ -40,7 +40,7 @@
           foreground => term:color(),
           background => term:color()}.
 
--spec run(binary()) -> term:text().
+-spec run(binary()) -> iodata().
 run(Data) ->
   {Stream, _} = term:decode(Data),
   State = #{sgr => #{}},

@@ -16,11 +16,11 @@
 
 -export([encode/1]).
 
--spec encode(term:stream()) -> term:text().
+-spec encode(term:stream()) -> iodata().
 encode(Stream) ->
   encode(Stream, []).
 
--spec encode(term:stream(), term:text()) -> term:text().
+-spec encode(term:stream(), iodata()) -> iodata().
 encode([], Acc) ->
   lists:reverse(Acc);
 encode([{text, Text} | Stream], Acc) ->
@@ -28,11 +28,11 @@ encode([{text, Text} | Stream], Acc) ->
 encode([{sequence, Sequence} | Stream], Acc) ->
   encode(Stream, [encode_sequence(Sequence) | Acc]).
 
--spec encode_sequence(term:sequence()) -> term:text().
+-spec encode_sequence(term:sequence()) -> iodata().
 encode_sequence({sgr, Parameters}) ->
   sgr_sequence(Parameters).
 
--spec sgr_sequence([term:sgr_parameter()]) -> term:text().
+-spec sgr_sequence([term:sgr_parameter()]) -> iodata().
 sgr_sequence(Parameters) ->
   Codes = lists:flatten([sgr_parameter_codes(P) || P <- Parameters]),
   ["\e[", lists:join($;, [integer_to_list(C) || C <- Codes]), $m].
