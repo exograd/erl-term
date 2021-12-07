@@ -80,4 +80,6 @@ apply_sgr_parameter(crossed_out, State) ->
 apply_sgr_parameter({foreground, Color}, State) ->
   State#{foreground => Color};
 apply_sgr_parameter({background, Color}, State) ->
-  State#{background => Color}.
+  State#{background => Color};
+apply_sgr_parameter(_, State) ->
+  State.
