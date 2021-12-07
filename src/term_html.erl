@@ -60,19 +60,19 @@ block_attributes(Block) ->
 block_css_classes(Block) ->
   F = fun
         (bold, true, Acc) ->
-          [<<"term-bold">> | Acc];
+          [<<"tb">> | Acc];
         (italic, true, Acc) ->
-          [<<"term-italic">> | Acc];
+          [<<"ti">> | Acc];
         (underline, true, Acc) ->
-          [<<"term-underline">> | Acc];
+          [<<"tu">> | Acc];
         (reverse_video, true, Acc) ->
-          [<<"term-reverse-video">> | Acc];
+          [<<"trv">> | Acc];
         (crossed_out, true, Acc) ->
-          [<<"term-crossed-out">> | Acc];
+          [<<"tco">> | Acc];
         (foreground, Color, Acc) when is_atom(Color) ->
-          [<<"term-fg-", (atom_to_binary(Color))/binary>> | Acc];
+          [<<"tfg-", (atom_to_binary(Color))/binary>> | Acc];
         (background, Color, Acc) when is_atom(Color) ->
-          [<<"term-bg-", (atom_to_binary(Color))/binary>> | Acc];
+          [<<"tbg-", (atom_to_binary(Color))/binary>> | Acc];
         (_, _, Acc) ->
           Acc
       end,
