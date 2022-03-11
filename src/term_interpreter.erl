@@ -40,7 +40,7 @@
           foreground => term:color(),
           background => term:color()}.
 
--spec run(binary()) -> iodata().
+-spec run(binary()) -> [block()].
 run(Data) ->
   {Stream, _} = term:decode(Data),
   State = #{sgr => #{}},

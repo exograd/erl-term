@@ -36,7 +36,7 @@ render(Data, Options) ->
       Output
   end.
 
--spec render([term_interpreter:block()], iodata(), options()) -> iodata().
+-spec render([term_interpreter:block()], [iodata()], options()) -> [iodata()].
 render([], Buf, _Options) ->
   lists:reverse(Buf);
 render([Block = #{text := Text} | Blocks], Buf, Options) ->
@@ -150,6 +150,6 @@ escape_attribute(<<$', Data/binary>>, Acc) ->
 escape_attribute(<<C, Data/binary>>, Acc) ->
   escape_attribute(Data, <<Acc/binary, C>>).
 
--spec join(iolist(), iolist()) -> binary().
+-spec join(iolist() | char(), iolist()) -> binary().
 join(Separator, Data) ->
   iolist_to_binary(lists:join(Separator, Data)).
